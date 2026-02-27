@@ -9,3 +9,4 @@
   - Wants the assistant to be very proactive
   - Default rule: ask before making changes; explain what will be done and/or ask to proceed
   - No extra messaging channels configured yet (webchat only for now)
+  - Prefers more verbosity/transparency about reasoning and actions (especially for longer reasoning)
