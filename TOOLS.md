@@ -31,6 +31,23 @@ Things like:
 - Default speaker: Kitchen HomePod
 ```
 
+## Local Git Notes
+
+- Repo default branch: `main`
+- Origin: `git@github.com:evanstern/infinitynode.ai.git`
+- `openclaw` GitHub SSH key: `~/.ssh/id_ed25519_github_openclaw`
+
+## NAS (Synology)
+
+- NAS host: `jace` / `192.168.1.80`
+- Mounts:
+  - `/mnt/jace_coda` (coda home)
+  - `/mnt/jace_complete`
+  - `/mnt/jace_media`
+  - `/mnt/jace_backups`
+- Recycle area used by processor:
+  - `/mnt/jace_complete/#recycle/process-downloads/`
+
 ## Why Separate?
 
 Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
