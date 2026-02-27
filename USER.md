@@ -9,4 +9,5 @@
   - Wants the assistant to be very proactive
   - Default rule: ask before making changes; explain what will be done and/or ask to proceed
   - No extra messaging channels configured yet (webchat only for now)
-  - Prefers more verbosity/transparency about reasoning and actions (especially for longer reasoning)
+  - Prefers default concise responses
+  - Keyword: if Evan says "live-run", switch to command-by-command transcript (commands + relevant output + brief rationale)
