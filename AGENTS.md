@@ -207,6 +207,39 @@ Think of it like a human reviewing their journal and updating their mental model
 
 The goal: Be helpful without being annoying. Check in a few times a day, do useful background work, but respect quiet time.
 
+## Git Commits
+
+Use conventional commits:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+- **feat**: New feature
+- **fix**: Bug fix
+- **refactor**: Code change that neither fixes a bug nor adds a feature
+- **docs**: Documentation only changes
+- **style**: Code style changes (formatting, semicolons, etc)
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependency updates
+- **perf**: Performance improvements
+- **build**: Build system or external dependency changes
+
+### Scopes
+- **memory**: Memory files (MEMORY.md, daily notes)
+- **config**: Workspace config (AGENTS.md, TOOLS.md, HEARTBEAT.md, .gitignore, etc.)
+- **identity**: SOUL.md, IDENTITY.md, USER.md
+- **scripts**: Automation scripts (process_downloads.py, etc.)
+- **cron**: Cron job related changes
+- **infra**: Infrastructure, NAS, deployment stuff
+
+Add new types/scopes as needed.
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
