@@ -37,6 +37,16 @@ Things like:
 - Origin: `git@github.com:evanstern/infinitynode.ai.git`
 - `openclaw` GitHub SSH key: `~/.ssh/id_ed25519_github_openclaw`
 
+## Vaultwarden / Bitwarden (bw CLI)
+
+- Evan runs `bw serve` (unlocked) locally for agent access at: `http://127.0.0.1:8087`
+- Helper script (prompts interactively): `/home/openclaw/bin/bw-serve-unlocked.sh`
+- Forgejo creds live in Vaultwarden:
+  - org: **Infinity Node**
+  - folder: **vm-104-openclaw**
+  - item name: **forgejo**
+- Note: outbound network calls from this agent may be gated by approvals; local `127.0.0.1` calls work.
+
 ## NAS (Synology)
 
 - NAS host: `jace` / `192.168.1.80`

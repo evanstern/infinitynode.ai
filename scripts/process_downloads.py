@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fcntl
 import json
 import os
 import re
@@ -46,6 +47,9 @@ RECYCLE = COMPLETE / "#recycle" / "process-downloads"
 LOG_DIR = CODA_HOME / "logs"
 LOG_FILE = LOG_DIR / "process-downloads.log"
 AUDIT_FILE = LOG_DIR / "process-downloads.audit.jsonl"
+
+# Prevent concurrent runs (cron/UI double-fires, gateway restarts, etc.)
+LOCK_PATH = Path("/tmp/process-downloads.lock")
 
 SKIP_NAMES = {".DS_Store", "#recycle"}
 
@@ -314,6 +318,19 @@ def main() -> int:
     args = ap.parse_args()
 
     run = bool(args.run)
+
+    # best-effort single-instance lock
+    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_fh = LOCK_PATH.open("w")
+    try:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another instance is already running; don't pile on.
+        try:
+            log_line("process-downloads: lock held; another instance is running (skipping)")
+        except Exception:
+            pass
+        return 0
 
     # sanity checks
     for p in [SRC_SERIES, SRC_MOVIES, DST_TV, DST_MOVIES, CODA_HOME]:
