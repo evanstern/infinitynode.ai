@@ -36,6 +36,13 @@ Suggested pattern:
 
 (We can adjust to match how you like to scan a board.)
 
+## Review / push policy
+
+Default:
+- I can edit freely and commit locally.
+- **Before any `git push`:** I’ll show you what changed (diffstat + key diffs) and wait for a 👍.
+- When it’s more than a tiny change, I’ll prefer: push to a branch + open a PR for your review.
+
 ## Definition of Done (default)
 
 - Clear acceptance criteria satisfied

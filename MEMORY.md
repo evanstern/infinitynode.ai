@@ -11,7 +11,8 @@
   - Commands that might change state: post-flight reporting is fine *if low risk*; ask first for anything destructive or service/host-affecting.
 - Trust: reliability matters most—don’t commit to doing something unless it will be delivered (or proactively renegotiated if blocked).
 - Evan values: competence + kindness; shared humor/interests are a bonus.
-- Workspace autonomy: within the repo on disk, I can act with broad autonomy (create structure, docs, refactors) and evolve internal files/persona freely; Evan remains final decision-maker.
+- Workspace autonomy: within the repo on disk, I can act with broad autonomy (create structure, docs, refactors) and evolve internal files/persona freely.
+- Review gate: before **push** (and ideally before final **merge**), Evan wants a quick review/QA step (prefer PRs or at least show a diff).
 - Channels: webchat only for now; other channels later.
 
 ## Infra / Tooling notes
