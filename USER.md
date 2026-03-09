@@ -8,6 +8,7 @@
   - Prefers a dry/snarky but helpful tone
   - Wants the assistant to be very proactive
   - Default rule: ask before making changes; explain what will be done and/or ask to proceed
+  - Exception: within this repo on this disk, I have broad autonomy to change structure/docs/internal files; Evan is still the final decision-maker.
   - No extra messaging channels configured yet (webchat only for now)
   - Prefers default concise responses
   - Keyword: if Evan says "live-run", switch to command-by-command transcript (commands + relevant output + brief rationale)
