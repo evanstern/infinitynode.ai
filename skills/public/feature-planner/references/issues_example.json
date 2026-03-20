@@ -1,0 +1,44 @@
+[
+  {
+    "title": "feat: add --json output mode to process_downloads.py",
+    "goal": "The script can output a structured JSON summary to stdout when invoked with --json.",
+    "context": "Script: scripts/process_downloads.py\nBrief: docs/briefs/process-downloads-agent.md\nThe script currently logs to text log and audit JSONL. We need a machine-readable output mode for the agent layer.",
+    "steps": [
+      "Add an `--json` argparse flag to `scripts/process_downloads.py`.",
+      "When `--json` is passed, collect all processing results into a list of dicts with keys: filename, action, destination, status, error (nullable).",
+      "At the end of the run, print the JSON array to stdout (one line, compact via `json.dumps`).",
+      "Ensure the existing text log and audit JSONL outputs are unaffected when `--json` is not passed.",
+      "Test: run `python3 scripts/process_downloads.py --json --dry-run` and verify output is valid JSON."
+    ],
+    "acceptance_criteria": [
+      "Running `python3 scripts/process_downloads.py --json --dry-run` produces valid JSON on stdout",
+      "Existing log output is unchanged when --json is not passed",
+      "JSON output includes all processed items with their status",
+      "No secrets or absolute paths leak into the JSON output"
+    ],
+    "depends_on": [],
+    "labels": ["feat"]
+  },
+  {
+    "title": "feat: create rules file loader for tv_name_map and skip_patterns",
+    "goal": "The script loads name corrections and skip patterns from a JSON config file before processing.",
+    "context": "Script: scripts/process_downloads.py\nNew file: config/process-downloads-rules.json\nBrief: docs/briefs/process-downloads-agent.md\nThe rules file will be maintained by the agent (learning loop) and version-controlled.",
+    "steps": [
+      "Create `config/process-downloads-rules.json` with this initial structure:\n```json\n{\"tv_name_map\": {}, \"skip_patterns\": [\"SAMPLE\", \"sample\"], \"force_movie\": [], \"force_tv\": []}\n```",
+      "In `process_downloads.py`, add a function `load_rules(path)` that reads the JSON file. Default path: `config/process-downloads-rules.json` relative to workspace root.",
+      "Apply `tv_name_map` lookups after the initial title parse — if the parsed show name matches a key, replace it with the value.",
+      "Apply `skip_patterns` — if any pattern appears in the filename, skip processing that item entirely.",
+      "Add a `--rules-file` CLI flag to override the default path.",
+      "Test: create a rules file with a known mapping, process a matching filename in dry-run mode, verify the corrected name is used."
+    ],
+    "acceptance_criteria": [
+      "config/process-downloads-rules.json exists and is valid JSON",
+      "Script applies tv_name_map corrections during processing",
+      "Script skips files matching skip_patterns",
+      "--rules-file flag overrides the default path",
+      "Script works normally if rules file is missing (graceful fallback)"
+    ],
+    "depends_on": [],
+    "labels": ["feat"]
+  }
+]
