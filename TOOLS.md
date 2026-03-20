@@ -45,6 +45,11 @@ Things like:
   - org: **Infinity Node**
   - folder: **vm-104-openclaw**
   - item name: **forgejo**
+- Forgejo base domain: `forgejo.local.infinity-node.win` (use http if needed; SSH for git when available)
+- Forgejo API docs reference: https://forgejo.org/docs/latest/user/api-usage/
+  - Swagger UI (if enabled): `http(s)://<host>/api/swagger`
+  - OpenAPI JSON: `http(s)://<host>/swagger.v1.json`
+  - API settings (paging limits, etc.): `GET /api/v1/settings/api`
 - Note: outbound network calls from this agent may be gated by approvals; local `127.0.0.1` calls work.
 
 ## NAS (Synology)
