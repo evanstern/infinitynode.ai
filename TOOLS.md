@@ -31,6 +31,25 @@ Things like:
 - Default speaker: Kitchen HomePod
 ```
 
+## Model Tiering (as of 2026-03-20)
+
+Budget: ~$200/mo target
+
+| Role | Model | Alias | Rationale |
+|------|-------|-------|-----------|
+| Main session (me) | Claude Sonnet 4 | `sonnet` | Good balance of cost + capability for daily work |
+| High-reasoning (planning, architecture) | Claude Opus 4.6 | `opus` | Use `/model opus` when deep reasoning needed |
+| Sub-agent execution (issues) | Claude Sonnet 4 | `sonnet` | Default for sub-agents |
+| Simple/bulk tasks | Haiku 4.5 or GPT-5.4 mini | `haiku` / `GPT` | Cheap for mechanical work |
+
+**How to escalate:** Evan or I can switch to Opus mid-session with `/model opus` when a task needs stronger reasoning, then back to Sonnet with `/model sonnet`.
+
+**Cost estimates (per 1M tokens):**
+- Opus 4.6: $5 in / $25 out
+- Sonnet 4: $3 in / $15 out
+- Haiku 4.5: $1 in / $5 out
+- GPT-5.4 mini: $0.75 in / $4.50 out
+
 ## Local Git Notes
 
 - Repo default branch: `main`

@@ -20,6 +20,14 @@
 - Forgejo base domain: `forgejo.local.infinity-node.win`.
 - Forgejo creds are stored in Vaultwarden (Infinity Node org → vm-104-openclaw folder → item "forgejo").
 
+## Model Tiering (decided 2026-03-20)
+- Budget: ~$200/mo
+- Main session: Sonnet 4 (swapped from Opus 4.6 to save cost)
+- High-reasoning tasks: Opus 4.6 via `/model opus` on demand
+- Sub-agent default: Sonnet 4
+- Cheap/bulk: Haiku 4.5 or GPT-5.4 mini
+- Aliases configured: `opus`, `sonnet`, `haiku`, `GPT`
+
 ## Workflow decisions
 - **Flow:** Idea → `docs/briefs/<feature>.md` (design/why) → Forgejo milestone → Forgejo issues (1–20+, LLM-executable) → sub-agent execution → PR → review.
 - Issues are written for lower-reasoning LLMs: self-contained, concrete steps, acceptance criteria, file paths, validation commands.

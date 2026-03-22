@@ -14,6 +14,7 @@ Before doing anything else:
 2. Read `USER.md` — this is who you're helping
 3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+5. **If the working directory contains an `AGENTS.md`**, read it — it provides project-specific context layered on top of this global config. Do this automatically without being asked.
 
 Don't ask permission. Just do it.
 

@@ -51,13 +51,17 @@ AUDIT_FILE = LOG_DIR / "process-downloads.audit.jsonl"
 # Prevent concurrent runs (cron/UI double-fires, gateway restarts, etc.)
 LOCK_PATH = Path("/tmp/process-downloads.lock")
 
-SKIP_NAMES = {".DS_Store", "#recycle"}
+SKIP_NAMES = {".DS_Store", "#recycle", "Books", "Default", "Music"}
 
 TV_RE = re.compile(
-    r"^(?P<show>.+?)(?:\.(?P<year>19\d{2}|20\d{2}))?\.S(?P<season>\d{2})E(?P<ep>\d{2})\b",
+    r"^(?P<show>.+?)(?:[. ](?P<year>19\d{2}|20\d{2}))?[. ]S(?P<season>\d{2})E(?P<ep>\d{2})\b",
     re.IGNORECASE,
 )
-MOVIE_RE = re.compile(r"^(?P<title>.+?)\.(?P<year>19\d{2}|20\d{2})\b", re.IGNORECASE)
+# Matches both "Title.Year" and "Title (Year)" folder formats
+MOVIE_RE = re.compile(
+    r"^(?P<title>.+?)(?:\.| \()(?P<year>19\d{2}|20\d{2})\b",
+    re.IGNORECASE,
+)
 
 VIDEO_EXTS = {".mkv", ".mp4", ".avi", ".mov", ".m4v", ".wmv"}
 
@@ -149,6 +153,38 @@ def find_video_files(root: Path) -> list[Path]:
     return vids
 
 
+def purge_exe_files(root: Path, run: bool) -> int:
+    """Delete any .exe files found recursively under root. Returns count deleted."""
+    count = 0
+    for p in root.rglob("*.exe"):
+        if not p.is_file():
+            continue
+        log_line(f"MALWARE purge: {p}")
+        if run:
+            p.unlink()
+        count += 1
+    return count
+
+
+def find_existing_show(show: str, year: Optional[int]) -> Optional[Path]:
+    """Return an existing show folder in DST_TV matching show name (exact, then year-qualified, then prefix)."""
+    if not DST_TV.exists():
+        return None
+    candidates = [show]
+    if year:
+        candidates.append(f"{show} ({year})")
+    for name in candidates:
+        p = DST_TV / name
+        if p.is_dir():
+            return p
+    # case-insensitive prefix fallback
+    lower = show.lower()
+    for p in sorted(DST_TV.iterdir()):
+        if p.is_dir() and p.name.lower().startswith(lower):
+            return p
+    return None
+
+
 def find_large_extensionless(root: Path, min_bytes: int = 100 * 1024 * 1024) -> list[Path]:
     out: list[Path] = []
     for p in root.rglob("*"):
@@ -177,11 +213,28 @@ def ensure_dir(path: Path, run: bool) -> None:
     log_line(f"mkdir -p {path}")
 
 
-def move_path(src: Path, dst: Path, run: bool) -> None:
+def move_path(src: Path, dst: Path, run: bool) -> bool:
+    """Move src to dst. Returns True if moved/deleted, False if src vanished.
+
+    If dst already exists (e.g. Sonarr already placed the file), the source
+    is deleted to avoid leaving duplicates behind.
+    """
+    # Destination already exists — delete the source duplicate.
+    if dst.exists():
+        log_line(f"DELETE src (already at dest): {src}")
+        if run:
+            src.unlink(missing_ok=True)
+        return True
     ensure_dir(dst.parent, run)
     if run:
-        shutil.move(str(src), str(dst))
+        try:
+            shutil.move(str(src), str(dst))
+        except FileNotFoundError:
+            # Source vanished between detection and move — likely moved by Sonarr.
+            log_line(f"SKIP (src vanished, likely moved externally): {src}")
+            return False
     log_line(f"move {src} -> {dst}")
+    return True
 
 
 def extract_rar(rar: Path, dest_dir: Path, run: bool) -> tuple[bool, str]:
@@ -207,8 +260,82 @@ def unique_recycle_dest(src_folder: Path) -> Path:
     return RECYCLE / date / f"{src_folder.name}.{os.getpid()}"
 
 
+def process_straggler(item: Path, run: bool) -> dict:
+    """Handle a folder or file found directly in the COMPLETE root (outside Series/Movies)."""
+    release = item.name
+    details_base: dict = {"path": str(item), "release": release}
+
+    # --- folder straggler ---
+    if item.is_dir():
+        # Purge malware first
+        purge_exe_files(item, run)
+
+        tv = parse_tv(release)
+        if tv:
+            # Check if the show already exists in DST_TV to confirm it's a TV release
+            existing = find_existing_show(tv.show, tv.year)
+            if existing:
+                log_line(f"STRAGGLER TV (matched existing show '{existing.name}'): {release} -> Series/")
+            else:
+                log_line(f"STRAGGLER TV (new show, treating as series): {release} -> Series/")
+            # Delegate to normal series processor (it handles dest dir creation)
+            return process_series_folder(item, run)
+
+        movie = parse_movie(release)
+        if movie:
+            log_line(f"STRAGGLER Movie: {release} -> Movies/")
+            return process_movie_folder(item, run)
+
+        log_line(f"STRAGGLER unclassified folder (can't parse as TV or movie): {release}")
+        return {**details_base, "kind": "straggler", "status": "error", "reason": "unclassified"}
+
+    # --- loose file straggler ---
+    if item.is_file():
+        if item.suffix.lower() == ".exe":
+            log_line(f"MALWARE purge (root): {item}")
+            if run:
+                item.unlink()
+            return {**details_base, "kind": "straggler", "status": "ok", "reason": "malware_purged"}
+
+        if item.suffix.lower() not in VIDEO_EXTS:
+            log_line(f"STRAGGLER skipping non-video file: {item.name}")
+            return {**details_base, "kind": "straggler", "status": "skipped", "reason": "not_video"}
+
+        # Bare video file — try to classify by filename
+        stem = item.stem
+        tv = parse_tv(stem)
+        if tv:
+            show_folder = tv.show if tv.year is None else f"{tv.show} ({tv.year})"
+            # Prefer existing show dir if found
+            existing = find_existing_show(tv.show, tv.year)
+            if existing:
+                show_folder = existing.name
+            season_folder = f"Season {tv.season:02d}"
+            dest_dir = DST_TV / show_folder / season_folder
+            log_line(f"STRAGGLER loose TV file -> {dest_dir / item.name}")
+            moved = move_path(item, dest_dir / item.name, run)
+            status = "ok" if moved else "skipped"
+            return {**details_base, "kind": "tv", "status": status, "dest": str(dest_dir)}
+
+        movie = parse_movie(stem)
+        if movie:
+            movie_folder = f"{movie.title} ({movie.year})"
+            dest_dir = DST_MOVIES / movie_folder
+            log_line(f"STRAGGLER loose movie file -> {dest_dir / item.name}")
+            moved = move_path(item, dest_dir / item.name, run)
+            status = "ok" if moved else "skipped"
+            return {**details_base, "kind": "movie", "status": status, "dest": str(dest_dir)}
+
+        log_line(f"STRAGGLER loose file unclassified: {item.name}")
+        return {**details_base, "kind": "straggler", "status": "error", "reason": "unclassified"}
+
+    return {**details_base, "kind": "straggler", "status": "skipped", "reason": "not_file_or_dir"}
+
+
 def process_series_folder(folder: Path, run: bool) -> dict:
     release = folder.name
+    # Purge any malware before processing
+    purge_exe_files(folder, run)
     parsed = parse_tv(release)
     if not parsed:
         msg = f"IRREGULAR TV name (can't parse): {release}"
@@ -238,14 +365,14 @@ def process_series_folder(folder: Path, run: bool) -> dict:
         moved_any = True
     elif vids:
         for v in vids:
-            move_path(v, dest_dir / v.name, run)
-            moved_any = True
+            if move_path(v, dest_dir / v.name, run):
+                moved_any = True
     elif extless:
         # rename using release name
         for f in extless:
             new_name = f"{release}.mkv"
-            move_path(f, dest_dir / new_name, run)
-            moved_any = True
+            if move_path(f, dest_dir / new_name, run):
+                moved_any = True
     else:
         log_line(f"IRREGULAR: no rar/video files found in {folder}")
         return {**details, "status": "error", "reason": "no_media_found"}
@@ -258,12 +385,18 @@ def process_series_folder(folder: Path, run: bool) -> dict:
             shutil.move(str(folder), str(recycle_dest))
         log_line(f"recycle {folder} -> {recycle_dest}")
         details["recycled_to"] = str(recycle_dest)
+    else:
+        # All files were already at destination (externally moved) — treat as ok/skipped
+        log_line(f"SKIP (all files already at dest or src vanished): {folder}")
+        details["status"] = "skipped"
 
     return details
 
 
 def process_movie_folder(folder: Path, run: bool) -> dict:
     release = folder.name
+    # Purge any malware before processing
+    purge_exe_files(folder, run)
     parsed = parse_movie(release)
     if not parsed:
         msg = f"IRREGULAR Movie name (can't parse year): {release}"
@@ -290,13 +423,13 @@ def process_movie_folder(folder: Path, run: bool) -> dict:
         moved_any = True
     elif vids:
         for v in vids:
-            move_path(v, dest_dir / v.name, run)
-            moved_any = True
+            if move_path(v, dest_dir / v.name, run):
+                moved_any = True
     elif extless:
         for f in extless:
             new_name = f"{release}.mkv"
-            move_path(f, dest_dir / new_name, run)
-            moved_any = True
+            if move_path(f, dest_dir / new_name, run):
+                moved_any = True
     else:
         log_line(f"IRREGULAR: no rar/video files found in {folder}")
         return {**details, "status": "error", "reason": "no_media_found"}
@@ -308,6 +441,10 @@ def process_movie_folder(folder: Path, run: bool) -> dict:
             shutil.move(str(folder), str(recycle_dest))
         log_line(f"recycle {folder} -> {recycle_dest}")
         details["recycled_to"] = str(recycle_dest)
+    else:
+        # All files already at destination or source vanished — not an error
+        log_line(f"SKIP (all files already at dest or src vanished): {folder}")
+        details["status"] = "skipped"
 
     return details
 
@@ -343,6 +480,16 @@ def main() -> int:
 
     results: list[dict] = []
 
+    # process straggler items dropped directly into the COMPLETE root
+    for item in iter_items(COMPLETE):
+        # skip the Series/, Movies/, and #recycle/ subdirs — handled below
+        if item.name in {"Series", "Movies", "#recycle"}:
+            continue
+        log_line(f"STRAGGLER found in complete root: {item.name}")
+        r = process_straggler(item, run)
+        results.append(r)
+        audit({"event": "straggler", **r})
+
     # process Series folders (each release is usually its own folder)
     for item in iter_items(SRC_SERIES):
         if not item.is_dir():
@@ -359,9 +506,10 @@ def main() -> int:
         audit({"event": "item", **r})
 
     ok = sum(1 for r in results if r.get("status") == "ok")
-    err = sum(1 for r in results if r.get("status") != "ok")
-    log_line(f"process-downloads done ok={ok} error={err}")
-    audit({"event": "done", "ok": ok, "error": err})
+    skipped = sum(1 for r in results if r.get("status") == "skipped")
+    err = sum(1 for r in results if r.get("status") not in ("ok", "skipped"))
+    log_line(f"process-downloads done ok={ok} skipped={skipped} error={err}")
+    audit({"event": "done", "ok": ok, "skipped": skipped, "error": err})
 
     return 0 if err == 0 else 1
 
