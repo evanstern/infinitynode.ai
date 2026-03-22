@@ -82,6 +82,20 @@ Budget: ~$200/mo target
 - Recycle area used by processor:
   - `/mnt/jace_complete/#recycle/process-downloads/`
 
+## Voice / sag (ElevenLabs TTS)
+
+- Binary: `~/go/bin/sag`
+- API key: `~/.config/sag/api-key` — must pass `--api-key-file ~/.config/sag/api-key` explicitly (env var only works when `.bashrc` is sourced)
+- Default voice: Roger (laid-back, casual, resonant)
+- **Upload flow** (Slack): generate to workspace, then use `message` tool with `filePath`
+  ```bash
+  ~/go/bin/sag speak --api-key-file ~/.config/sag/api-key -o ~/.openclaw/workspace/voice-reply.mp3 "text"
+  ```
+  Then: `message(action=send, filePath=~/.openclaw/workspace/voice-reply.mp3)`
+- `/tmp` paths are blocked by the message tool — always write to workspace
+- Slack scope required: `files:write` (added 2026-03-22)
+- Use sparingly — best for storytime, humor, or when voice adds real value
+
 ## Why Separate?
 
 Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
