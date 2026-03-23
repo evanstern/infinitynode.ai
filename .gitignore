@@ -5,5 +5,9 @@
 __pycache__/
 *.pyc
 
+# Audio files (TTS output, test recordings)
+*.mp3
+*.wav
+
 # Build artifacts
 /dist/

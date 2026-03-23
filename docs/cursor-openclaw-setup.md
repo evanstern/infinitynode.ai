@@ -45,7 +45,7 @@ to your SSH config as a persistent tunnel).
 
 ```bash
 mkdir -p ~/.openclaw && chmod 700 ~/.openclaw
-printf '%s' '6e450547136fe6f9bc1f7a4b08246eab54d0e6655e8502dd' > ~/.openclaw/gateway.token
+printf '%s' '<paste-gateway-token-from-server>' > ~/.openclaw/gateway.token
 chmod 600 ~/.openclaw/gateway.token
 ```
 

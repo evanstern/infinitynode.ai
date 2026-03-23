@@ -38,7 +38,7 @@ You are not logged in.
 openclaw@infinity-node-openclaw:~$ ./bin/bw-serve-unlocked.sh 
 bw not logged in; starting interactive: bw login --apikey
 ? client_id: user.2adeeab2-0451-4f7d-aa70-98974d3d6b96
-? client_secret: eServH8RSnIhvXnMfoQRw0VeUlEXw5
+? client_secret: [REDACTED — rotate via Forgejo Issue #2]
 You are logged in!
 
 To unlock your vault, use the `unlock` command. ex:

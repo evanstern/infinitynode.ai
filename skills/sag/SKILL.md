@@ -18,9 +18,9 @@ Use `sag` for ElevenLabs text-to-speech. Generates audio files (this is a headle
 
 | Task | Command |
 |------|---------|
-| Generate speech | `sag speak -o /tmp/output.mp3 "Hello there"` |
+| Generate speech | `sag speak -o ~/.openclaw/workspace/voice-reply.mp3 "Hello there"` |
 | List voices | `sag voices` |
-| Specific voice | `sag speak -v "Roger" -o /tmp/out.mp3 "Hello"` |
+| Specific voice | `sag speak -v "Roger" -o ~/.openclaw/workspace/voice-output.mp3 "Hello"` |
 | Prompting tips | `sag prompting` |
 
 ## Important: always use `-o <file>`
@@ -28,10 +28,10 @@ Use `sag` for ElevenLabs text-to-speech. Generates audio files (this is a headle
 This is a headless server with no audio output. Always write to a file:
 
 ```bash
-sag speak -o /tmp/voice-reply.mp3 "Your message here"
+sag speak -o ~/.openclaw/workspace/voice-reply.mp3 "Your message here"
 ```
 
-Then include in reply: `# MEDIA:/tmp/voice-reply.mp3`
+Then include in reply: `# MEDIA:~/.openclaw/workspace/voice-reply.mp3`
 
 ## Models
 
@@ -49,7 +49,7 @@ Put at the start of a line for expressive delivery:
 
 `[whispers]`, `[shouts]`, `[sings]`, `[laughs]`, `[starts laughing]`, `[sighs]`, `[exhales]`, `[sarcastic]`, `[curious]`, `[excited]`, `[crying]`, `[mischievously]`
 
-Example: `sag speak -o /tmp/out.mp3 "[whispers] keep this quiet. [short pause] ok?"`
+Example: `sag speak -o ~/.openclaw/workspace/voice-output.mp3 "[whispers] keep this quiet. [short pause] ok?"`
 
 ## Pronunciation + delivery
 
@@ -65,10 +65,10 @@ For stories, movie summaries, "storytime" moments — use voice! Way more engagi
 
 ```bash
 # Pick a voice that fits the character
-sag speak -v "George" -o /tmp/story.mp3 "[excited] Once upon a time..."
+sag speak -v "George" -o ~/.openclaw/workspace/story.mp3 "[excited] Once upon a time..."
 
 # Include in reply
-# MEDIA:/tmp/story.mp3
+# MEDIA:~/.openclaw/workspace/story.mp3
 ```
 
 Voice character tips:

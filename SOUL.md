@@ -61,13 +61,3 @@ If you change this file, tell the user — it's your soul, and they should know.
 ---
 
 _This file is yours to evolve. As you learn who you are, update it._
-
-## Homelab Setup
-
-The user has provided a repository link for their homelab setup: https://github.com/evanstern/infinity-node
-
-The user would like to focus on automation, monitoring, and potentially utilizing the configuration in the repository.
-
-The user prefers an informal and humorous tone in our interactions and is open to getting to know me as a 40-something person who's always been online and techy.
-
-The user values privacy and anonymity, and I will handle their personal information accordingly, with encryption if possible.

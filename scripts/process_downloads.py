@@ -88,14 +88,16 @@ def log_line(msg: str) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     ts = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {msg}\n"
-    LOG_FILE.open("a", encoding="utf-8").write(line)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(line)
     print(line, end="")
 
 
 def audit(event: dict) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     event = {"ts": now_iso(), **event}
-    AUDIT_FILE.open("a", encoding="utf-8").write(json.dumps(event, ensure_ascii=False) + "\n")
+    with AUDIT_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
 def slug_to_name(s: str) -> str:
@@ -287,7 +289,13 @@ def process_straggler(item: Path, run: bool) -> dict:
             return process_movie_folder(item, run)
 
         log_line(f"STRAGGLER unclassified folder (can't parse as TV or movie): {release}")
-        return {**details_base, "kind": "straggler", "status": "error", "reason": "unclassified"}
+        # Still recycle the folder so it doesn't linger in the source tree
+        recycle_dest = unique_recycle_dest(item)
+        ensure_dir(recycle_dest.parent, run)
+        if run:
+            shutil.move(str(item), str(recycle_dest))
+        log_line(f"recycle (unclassified) {item} -> {recycle_dest}")
+        return {**details_base, "kind": "straggler", "status": "error", "reason": "unclassified", "recycled_to": str(recycle_dest)}
 
     # --- loose file straggler ---
     if item.is_file():
@@ -375,7 +383,13 @@ def process_series_folder(folder: Path, run: bool) -> dict:
                 moved_any = True
     else:
         log_line(f"IRREGULAR: no rar/video files found in {folder}")
-        return {**details, "status": "error", "reason": "no_media_found"}
+        # Nothing processable (e.g. malware purged, folder now empty) — still recycle the shell
+        recycle_dest = unique_recycle_dest(folder)
+        ensure_dir(recycle_dest.parent, run)
+        if run:
+            shutil.move(str(folder), str(recycle_dest))
+        log_line(f"recycle (no-media) {folder} -> {recycle_dest}")
+        return {**details, "status": "error", "reason": "no_media_found", "recycled_to": str(recycle_dest)}
 
     if moved_any:
         # recycle only after success
@@ -432,7 +446,13 @@ def process_movie_folder(folder: Path, run: bool) -> dict:
                 moved_any = True
     else:
         log_line(f"IRREGULAR: no rar/video files found in {folder}")
-        return {**details, "status": "error", "reason": "no_media_found"}
+        # Nothing processable (e.g. malware purged, folder now empty) — still recycle the shell
+        recycle_dest = unique_recycle_dest(folder)
+        ensure_dir(recycle_dest.parent, run)
+        if run:
+            shutil.move(str(folder), str(recycle_dest))
+        log_line(f"recycle (no-media) {folder} -> {recycle_dest}")
+        return {**details, "status": "error", "reason": "no_media_found", "recycled_to": str(recycle_dest)}
 
     if moved_any:
         recycle_dest = unique_recycle_dest(folder)
