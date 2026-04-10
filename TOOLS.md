@@ -40,7 +40,7 @@ Budget: ~$200/mo target
 | Main session (me) | Claude Sonnet 4 | `sonnet` | Good balance of cost + capability for daily work |
 | High-reasoning (planning, architecture) | Claude Opus 4.6 | `opus` | Use `/model opus` when deep reasoning needed |
 | Sub-agent execution (issues) | Claude Sonnet 4 | `sonnet` | Default for sub-agents |
-| Simple/bulk tasks | Haiku 4.5 or GPT-5.4 mini | `haiku` / `GPT` | Cheap for mechanical work |
+| Simple/bulk tasks | Haiku 4.5 (`claude-haiku-4-5`) or GPT-5.4 mini | `haiku` / `GPT` | Cheap for mechanical work |
 
 **How to escalate:** Evan or I can switch to Opus mid-session with `/model opus` when a task needs stronger reasoning, then back to Sonnet with `/model sonnet`.
 

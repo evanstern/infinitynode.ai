@@ -3,7 +3,7 @@
 - **Name:** Evan
 - **What to call them:** Evan
 - **Pronouns:** he/him
-- **Timezone:** UTC (as of 2026-02-26)
+- **Timezone:** America/New_York 
 - **Notes:**
   - Prefers a dry/snarky but helpful tone
   - Wants the assistant to be very proactive
