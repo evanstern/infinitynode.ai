@@ -54,7 +54,7 @@ LOCK_PATH = Path("/tmp/process-downloads.lock")
 SKIP_NAMES = {".DS_Store", "#recycle", "Books", "Default", "Music"}
 
 TV_RE = re.compile(
-    r"^(?P<show>.+?)(?:[. ](?P<year>19\d{2}|20\d{2}))?[. ]S(?P<season>\d{2})E(?P<ep>\d{2})\b",
+    r"^(?P<show>.+?)(?:[.\- ](?P<year>19\d{2}|20\d{2}))?[.\- ]S(?P<season>\d{2})E(?P<ep>\d{2})\b",
     re.IGNORECASE,
 )
 # Matches both "Title.Year" and "Title (Year)" folder formats
@@ -64,6 +64,13 @@ MOVIE_RE = re.compile(
 )
 
 VIDEO_EXTS = {".mkv", ".mp4", ".avi", ".mov", ".m4v", ".wmv"}
+
+# Extensions considered potentially malicious / unsafe executables.
+THREAT_EXTS = {
+    ".exe", ".bat", ".cmd", ".scr", ".pif", ".com",
+    ".vbs", ".vbe", ".js", ".jse", ".ps1", ".psm1",
+    ".msi", ".jar", ".hta",
+}
 
 
 @dataclass
@@ -101,8 +108,8 @@ def audit(event: dict) -> None:
 
 
 def slug_to_name(s: str) -> str:
-    # Release names are dot-separated; keep some punctuation but normalize whitespace.
-    s = s.replace(".", " ")
+    # Release names use dots or hyphens as separators; normalize both to spaces.
+    s = s.replace(".", " ").replace("-", " ")
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
@@ -155,17 +162,54 @@ def find_video_files(root: Path) -> list[Path]:
     return vids
 
 
-def purge_exe_files(root: Path, run: bool) -> int:
-    """Delete any .exe files found recursively under root. Returns count deleted."""
-    count = 0
-    for p in root.rglob("*.exe"):
+def purge_threat_files(root: Path, run: bool) -> list[Path]:
+    """Delete any files with known-malicious extensions found recursively under root.
+
+    Returns list of paths that were (or would be) deleted.
+    """
+    purged: list[Path] = []
+    for p in root.rglob("*"):
         if not p.is_file():
             continue
-        log_line(f"MALWARE purge: {p}")
-        if run:
-            p.unlink()
-        count += 1
-    return count
+        if p.suffix.lower() in THREAT_EXTS:
+            log_line(f"MALWARE purge: {p}")
+            if run:
+                try:
+                    p.unlink()
+                except OSError as exc:
+                    log_line(f"ERROR purging threat file {p}: {exc}")
+                    continue
+            purged.append(p)
+    return purged
+
+
+def is_malware_folder(root: Path) -> bool:
+    """Return True when a folder contains threat files but zero legitimate media.
+
+    Used to decide whether to nuke the whole folder rather than try to process it.
+    """
+    has_threat = False
+    for p in root.rglob("*"):
+        if not p.is_file():
+            continue
+        ext = p.suffix.lower()
+        if ext in THREAT_EXTS:
+            has_threat = True
+        elif ext in VIDEO_EXTS or ext == ".rar":
+            # Legitimate content present — not a pure malware folder.
+            return False
+    return has_threat
+
+
+def nuke_folder(folder: Path, reason: str, run: bool) -> None:
+    """Permanently delete an entire folder tree. Logged + audited."""
+    log_line(f"MALWARE NUKE ({reason}): {folder}")
+    audit({"event": "malware_nuke", "path": str(folder), "reason": reason})
+    if run:
+        try:
+            shutil.rmtree(folder)
+        except OSError as exc:
+            log_line(f"ERROR nuking folder {folder}: {exc}")
 
 
 def find_existing_show(show: str, year: Optional[int]) -> Optional[Path]:
@@ -269,8 +313,13 @@ def process_straggler(item: Path, run: bool) -> dict:
 
     # --- folder straggler ---
     if item.is_dir():
-        # Purge malware first
-        purge_exe_files(item, run)
+        # Nuke immediately if it's a pure malware folder (no legit media at all).
+        if is_malware_folder(item):
+            nuke_folder(item, "straggler_malware_folder", run)
+            return {**details_base, "kind": "straggler", "status": "ok", "reason": "malware_folder_nuked"}
+
+        # Otherwise purge individual threat files and continue normal processing.
+        purge_threat_files(item, run)
 
         tv = parse_tv(release)
         if tv:
@@ -299,10 +348,14 @@ def process_straggler(item: Path, run: bool) -> dict:
 
     # --- loose file straggler ---
     if item.is_file():
-        if item.suffix.lower() == ".exe":
+        if item.suffix.lower() in THREAT_EXTS:
             log_line(f"MALWARE purge (root): {item}")
+            audit({"event": "malware_purge", "path": str(item)})
             if run:
-                item.unlink()
+                try:
+                    item.unlink()
+                except OSError as exc:
+                    log_line(f"ERROR purging threat file {item}: {exc}")
             return {**details_base, "kind": "straggler", "status": "ok", "reason": "malware_purged"}
 
         if item.suffix.lower() not in VIDEO_EXTS:
@@ -342,8 +395,14 @@ def process_straggler(item: Path, run: bool) -> dict:
 
 def process_series_folder(folder: Path, run: bool) -> dict:
     release = folder.name
-    # Purge any malware before processing
-    purge_exe_files(folder, run)
+
+    # Nuke immediately if this is a pure malware folder.
+    if is_malware_folder(folder):
+        nuke_folder(folder, "series_malware_folder", run)
+        return {"kind": "tv", "release": release, "status": "ok", "reason": "malware_folder_nuked", "path": str(folder)}
+
+    # Otherwise purge individual threat files and continue.
+    purge_threat_files(folder, run)
     parsed = parse_tv(release)
     if not parsed:
         msg = f"IRREGULAR TV name (can't parse): {release}"
@@ -409,8 +468,14 @@ def process_series_folder(folder: Path, run: bool) -> dict:
 
 def process_movie_folder(folder: Path, run: bool) -> dict:
     release = folder.name
-    # Purge any malware before processing
-    purge_exe_files(folder, run)
+
+    # Nuke immediately if this is a pure malware folder.
+    if is_malware_folder(folder):
+        nuke_folder(folder, "movie_malware_folder", run)
+        return {"kind": "movie", "release": release, "status": "ok", "reason": "malware_folder_nuked", "path": str(folder)}
+
+    # Otherwise purge individual threat files and continue.
+    purge_threat_files(folder, run)
     parsed = parse_movie(release)
     if not parsed:
         msg = f"IRREGULAR Movie name (can't parse year): {release}"
