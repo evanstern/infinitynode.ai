@@ -1,0 +1,48 @@
+---
+import { getCollection, render } from 'astro:content';
+import '../../styles/global.css';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('posts')).filter((post) => !post.data.draft);
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat('en', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={post.data.description} />
+    <title>{post.data.title} | infinitynode.ai</title>
+    <link rel="alternate" type="application/rss+xml" title="infinitynode.ai RSS" href="/rss.xml" />
+  </head>
+  <body>
+    <main class="site-shell">
+      <p><a href="/">← Back to posts</a></p>
+      <article>
+        <header class="post-header">
+          <h1>{post.data.title}</h1>
+          <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+          <p>{post.data.description}</p>
+        </header>
+        <Content />
+      </article>
+    </main>
+  </body>
+</html>

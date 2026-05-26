@@ -1,0 +1,152 @@
+:root {
+  --color-bg: #f8f7f2;
+  --color-text: #1d1d1b;
+  --color-muted: #62605a;
+  --color-border: #dedbd2;
+  --color-code-bg: #ebe7dc;
+  --color-link: #174f84;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --font-body: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-thickness: 0.12em;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 var(--space-4);
+}
+
+h1 {
+  font-size: clamp(2rem, 8vw, 3.75rem);
+  letter-spacing: -0.04em;
+}
+
+h2 {
+  border-bottom: 1px solid var(--color-border);
+  font-size: 1.35rem;
+  padding-bottom: var(--space-2);
+}
+
+p,
+ul,
+pre {
+  margin: 0 0 var(--space-6);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+code {
+  background: var(--color-code-bg);
+  border-radius: var(--space-1);
+  padding: 0.1em 0.25em;
+}
+
+pre {
+  background: var(--color-code-bg);
+  border: 1px solid var(--color-border);
+  overflow-x: auto;
+  padding: var(--space-4);
+}
+
+pre code {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+time,
+.eyebrow {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.site-shell {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: var(--space-12) var(--space-4);
+}
+
+.site-header,
+.post-header {
+  margin-bottom: var(--space-12);
+}
+
+.site-header p,
+.post-header p {
+  color: var(--color-muted);
+  font-size: 1.1rem;
+}
+
+.eyebrow {
+  margin-bottom: var(--space-4);
+}
+
+.post-list {
+  list-style: none;
+  padding: 0;
+}
+
+.post-list li {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-6) 0;
+}
+
+.post-list a {
+  display: inline-block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: var(--space-1);
+}
+
+.post-list time {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.post-list p,
+.inline-note {
+  color: var(--color-muted);
+}
+
+.inline-note {
+  border-left: 3px solid var(--color-border);
+  padding-left: var(--space-4);
+}

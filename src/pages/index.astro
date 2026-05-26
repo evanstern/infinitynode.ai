@@ -1,0 +1,51 @@
+---
+import { getCollection } from 'astro:content';
+import '../styles/global.css';
+
+const posts = (await getCollection('posts'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat('en', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Developer notes and idea dumps from infinitynode.ai." />
+    <title>infinitynode.ai</title>
+    <link rel="alternate" type="application/rss+xml" title="infinitynode.ai RSS" href="/rss.xml" />
+  </head>
+  <body>
+    <main class="site-shell">
+      <header class="site-header">
+        <p class="eyebrow">infinitynode.ai</p>
+        <h1>Developer notes, idea dumps, and project logs.</h1>
+        <p>
+          A small static blog for writing things down in Markdown and MDX.
+        </p>
+      </header>
+
+      <section aria-labelledby="posts-heading">
+        <h2 id="posts-heading">Posts</h2>
+        <ul class="post-list">
+          {posts.map((post) => (
+            <li>
+              <a href={`/posts/${post.id}/`}>{post.data.title}</a>
+              <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+              <p>{post.data.description}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
